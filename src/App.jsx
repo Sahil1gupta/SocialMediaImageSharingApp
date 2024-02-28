@@ -25,7 +25,6 @@ function App() {
         if (!userId) return;
 
         const q = query(collection(firestore, "images"), where("userId", "==", userId));
-
         const snapshot = await getDocs(q);
         const imagesData = snapshot.docs.map((doc) => doc.data());
         setImages(imagesData);
@@ -70,15 +69,17 @@ function App() {
   };
 
   const handleImageView = async (imageUrl) => {
-    // Trigger custom event for image view
-    await analytics().logEvent('image_view', { image_url: imageUrl });
+    try {
+      // Trigger custom event for image view
+      await analytics.logEvent('image_view', { image_url: imageUrl });
 
-    // Update views counter in Firestore
-    const q = query(collection(firestore, "images"), where("imageUrl", "==", imageUrl));
-    const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-      const docRef = snapshot.docs[0].ref;
-      await updateDoc(docRef, { views: increment(1) });
+      // Construct the document reference using the image ID
+      const imageRef = doc(firestore, "images", imageUrl.split("/").pop());
+
+      // Update views counter in Firestore
+      await updateDoc(imageRef, { views: increment(1) });
+    } catch (error) {
+      console.error("Error updating views counter:", error);
     }
   };
 
