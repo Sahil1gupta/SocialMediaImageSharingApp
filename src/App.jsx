@@ -43,23 +43,23 @@ function App() {
 
   const handleUpload = () => {
     if (selectedImage === null || !userId) return;
-
+  
     const imageId = uuidv4();
     const imageRef = ref(storage, `images/${imageId}`);
-
+  
     uploadBytes(imageRef, selectedImage)
       .then(async () => {
         alert("Image uploaded successfully");
-
+  
         const downloadUrl = await getDownloadURL(imageRef);
-
+  
         await addDoc(collection(firestore, "images"), {
           imageUrl: downloadUrl,
-          timestamp: new Date().toISOString(),
+          timestamp: firestore.FieldValue.serverTimestamp(), // Use server timestamp
           userId: userId,
           views: 0 // Initialize views counter
         });
-
+  
         setSelectedImage(null);
       })
       .catch((err) => {
@@ -67,21 +67,22 @@ function App() {
         alert("Error uploading image. Please try again.");
       });
   };
-
+  
   const handleImageView = async (imageUrl) => {
     try {
       // Trigger custom event for image view
       await analytics.logEvent('image_view', { image_url: imageUrl });
-
+  
       // Construct the document reference using the image ID
       const imageRef = doc(firestore, "images", imageUrl.split("/").pop());
-
+  
       // Update views counter in Firestore
       await updateDoc(imageRef, { views: increment(1) });
     } catch (error) {
-      console.error("Error updating views counter:", error);
+      console.error("Error updating views counter or logging image view:", error);
     }
   };
+  
 
   return (
     <div>
