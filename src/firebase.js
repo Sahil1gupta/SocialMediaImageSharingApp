@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { initializeFirestore, getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-import { initializeAnalytics } from 'firebase/analytics';
+import { getAnalytics } from "firebase/analytics";
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyBwGkSqUjVr3NCFXuD0GgGPig5zlJRnqP0",
@@ -14,9 +14,8 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
+const firestore = getFirestore(app);
+const storage = getStorage(app);
+const analytics = getAnalytics(app); // Initialize Firebase Analytics
 
-// Initialize Firebase Analytics
-// Export Firestore, Storage, and Analytics instances
-export const firestore = getFirestore(app);
-export const storage = getStorage(app);
-export const analytics = initializeAnalytics(app);
+export { firestore, storage, analytics };
