@@ -4,7 +4,8 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from "uuid";
 import { collection, getDocs, addDoc, query, where, doc, updateDoc, increment } from "firebase/firestore";
 import { firestore } from "./firebase";
-import { analytics } from 'firebase/analytics';
+import 'firebase/analytics';
+
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -71,17 +72,18 @@ function App() {
   const handleImageView = async (imageUrl) => {
     try {
       // Trigger custom event for image view
-      await analytics.logEvent('image_view', { image_url: imageUrl });
-
+      await firebase.analytics().logEvent('image_view', { image_url: imageUrl });
+  
       // Construct the document reference using the image ID
       const imageRef = doc(firestore, "images", imageUrl.split("/").pop());
-
+  
       // Update views counter in Firestore
       await updateDoc(imageRef, { views: increment(1) });
     } catch (error) {
       console.error("Error updating views counter:", error);
     }
   };
+  
 
   return (
     <div>
