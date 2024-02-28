@@ -83,27 +83,37 @@ function App() {
     }
   };
 
+  const handleCopyImageUrl = (imageUrl) => {
+    navigator.clipboard.writeText(imageUrl)
+      .then(() => {
+        alert("Image URL copied to clipboard!");
+      })
+      .catch((error) => {
+        console.error("Error copying image URL:", error);
+      });
+  };
+
   return (
-    <div>
-      <input type="file" onChange={handleImageChange} />
-      <button onClick={handleUpload}>Upload Image</button>
-      <div>
-        {images.map((image, index) => (
-          <div key={index}>
-            <img
-              className="h-auto max-w-md"
-              src={image.imageUrl}
-              alt={`Uploaded ${index}`}
-              style={{ maxHeight: "200px" }}
-              onClick={() => handleImageView(image.imageUrl)} // Track image view
-            />
-            <p>Image URL: {image.imageUrl}</p>
-            <p>Views: {image.views}</p>
-          </div>
-        ))}
-      </div>
+    <div className="p-8">
+    <input type="file" onChange={handleImageChange} className="mb-4" />
+    <button onClick={handleUpload} className="bg-blue-500 text-white py-2 px-4 rounded-md mr-4">Upload Image</button>
+    <div className="flex flex-wrap">
+      {images.map((image, index) => (
+        <div key={index} className="flex flex-col items-center mr-4 mb-4">
+          <img
+            className="h-auto max-w-md mb-2"
+            src={image.imageUrl}
+            alt={`Uploaded ${index}`}
+            style={{ maxHeight: "200px" }}
+            onClick={() => handleImageView(image.imageUrl)} // Track image view
+          />
+          <button onClick={() => handleCopyImageUrl(image.imageUrl)} className="bg-gray-500 text-white py-1 px-2 rounded-md">Copy Image Link</button>
+          <p className="mt-2">Views: {image.views}</p>
+        </div>
+      ))}
     </div>
-  );
+  </div>
+  )  
 }
 
 export default App;
