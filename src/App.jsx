@@ -1,20 +1,20 @@
 import { useState, useEffect } from "react";
 import { storage } from "./firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage"; // Import getDownloadURL
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { v4 as uuidv4 } from "uuid";
-import { collection, getDocs, addDoc, query, where } from "firebase/firestore"; // Import addDoc and query
+import { collection, getDocs, addDoc, query, where, doc, updateDoc, increment } from "firebase/firestore";
 import { firestore } from "./firebase";
+import { analytics } from 'firebase/analytics';
 
 function App() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [images, setImages] = useState([]);
-  const [userId, setUserId] = useState(localStorage.getItem("userId") || null); // Retrieve userId from localStorage
+  const [userId, setUserId] = useState(localStorage.getItem("userId") || null);
 
   useEffect(() => {
     if (!userId) {
-      // If userId doesn't exist in localStorage, generate a new one
       const newUserId = uuidv4();
-      localStorage.setItem("userId", newUserId); // Store userId in localStorage
+      localStorage.setItem("userId", newUserId);
       setUserId(newUserId);
     }
   }, [userId]);
@@ -22,9 +22,8 @@ function App() {
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        if (!userId) return; // Don't fetch images if userId is not available
+        if (!userId) return;
 
-        // Query only for images associated with the current user
         const q = query(collection(firestore, "images"), where("userId", "==", userId));
 
         const snapshot = await getDocs(q);
@@ -36,7 +35,7 @@ function App() {
     };
 
     fetchImages();
-  }, [userId, selectedImage]); // Include userId and selectedImage as dependencies
+  }, [userId, selectedImage]);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -46,21 +45,20 @@ function App() {
   const handleUpload = () => {
     if (selectedImage === null || !userId) return;
 
-    const imageId = uuidv4(); // Generate a unique ID for the image
+    const imageId = uuidv4();
     const imageRef = ref(storage, `images/${imageId}`);
 
     uploadBytes(imageRef, selectedImage)
       .then(async () => {
         alert("Image uploaded successfully");
 
-        // Get the download URL for the uploaded image
         const downloadUrl = await getDownloadURL(imageRef);
 
-        // Store image metadata in Firestore, associate with the current user's userId
         await addDoc(collection(firestore, "images"), {
           imageUrl: downloadUrl,
           timestamp: new Date().toISOString(),
           userId: userId,
+          views: 0 // Initialize views counter
         });
 
         setSelectedImage(null);
@@ -69,6 +67,19 @@ function App() {
         console.error("Error uploading image:", err);
         alert("Error uploading image. Please try again.");
       });
+  };
+
+  const handleImageView = async (imageUrl) => {
+    // Trigger custom event for image view
+    await analytics().logEvent('image_view', { image_url: imageUrl });
+
+    // Update views counter in Firestore
+    const q = query(collection(firestore, "images"), where("imageUrl", "==", imageUrl));
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      const docRef = snapshot.docs[0].ref;
+      await updateDoc(docRef, { views: increment(1) });
+    }
   };
 
   return (
@@ -83,8 +94,10 @@ function App() {
               src={image.imageUrl}
               alt={`Uploaded ${index}`}
               style={{ maxHeight: "200px" }}
+              onClick={() => handleImageView(image.imageUrl)} // Track image view
             />
             <p>Image URL: {image.imageUrl}</p>
+            <p>Views: {image.views}</p>
           </div>
         ))}
       </div>
